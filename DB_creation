@@ -1,0 +1,111 @@
+-- Создание таблицы вокзалов
+CREATE TABLE vokzals (
+    vokzal_id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    city VARCHAR(50) NOT NULL
+);
+
+-- Создание таблицы типов недели
+CREATE TABLE week_types (
+    week_type_id SERIAL PRIMARY KEY,
+    name VARCHAR(20) NOT NULL
+);
+
+-- Создание таблицы поездов
+CREATE TABLE trains (
+    train_id SERIAL PRIMARY KEY,
+    model VARCHAR(50) NOT NULL,
+    capacity INTEGER NOT NULL
+);
+
+-- Создание таблицы станций
+CREATE TABLE stations (
+    station_id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    code VARCHAR(10) NOT NULL,
+    vokzal_id INTEGER REFERENCES vokzals(vokzal_id)
+);
+
+-- Создание таблицы маршрутов с флагами дней
+CREATE TABLE routes (
+    route_id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    train_id INTEGER REFERENCES trains(train_id),
+    weekday_only BOOLEAN DEFAULT FALSE,
+    weekend_only BOOLEAN DEFAULT FALSE
+);
+
+-- Создание таблицы остановок маршрута
+CREATE TABLE route_stations (
+    route_station_id SERIAL PRIMARY KEY,
+    route_id INTEGER REFERENCES routes(route_id),
+    station_id INTEGER REFERENCES stations(station_id),
+    stop_order INTEGER NOT NULL,
+    arrival_time TIME,
+    departure_time TIME
+);
+
+-- Создание таблицы расписания
+CREATE TABLE schedules (
+    schedule_id SERIAL PRIMARY KEY,
+    route_id INTEGER REFERENCES routes(route_id),
+    week_type_id INTEGER REFERENCES week_types(week_type_id)
+);
+
+-- Вставка вокзалов
+INSERT INTO vokzals (name, city) VALUES
+('Финляндский вокзал', 'Санкт-Петербург'),
+('Московский вокзал', 'Санкт-Петербург'),
+('Витебский вокзал', 'Санкт-Петербург');
+
+-- Вставка типов недель
+INSERT INTO week_types (name) VALUES
+('Рабочие дни'), ('Выходные дни');
+
+-- Вставка поездов
+INSERT INTO trains (model, capacity) VALUES
+('ЭД4М', 800),
+('Ласточка', 350),
+('ЭР2Т', 700);
+
+-- Вставка станций
+INSERT INTO stations (name, code, vokzal_id) VALUES
+('Ладожская', 'LDZ', 1),
+('Девяткино', 'DVT', 1),
+('Токсово', 'TKS', 1),
+('Пискаревка', 'PSK', 1),
+('Пушкин', 'PSH', 2),
+('Павловск', 'PVL', 2),
+('Тосно', 'TSN', 2),
+('Гатчина', 'GCH', 3),
+('Дно', 'DNO', 3),
+('Луга', 'LGA', 3);
+
+-- Вставка маршрутов с указанием дней
+INSERT INTO routes (name, train_id, weekday_only, weekend_only) VALUES
+('СПб — Токсово', 1, FALSE, FALSE),  -- Работает все дни
+('СПб — Павловск', 2, TRUE, FALSE),   -- Только рабочие дни
+('СПб — Луга', 3, FALSE, TRUE);       -- Только выходные
+
+-- Привязка маршрутов к станциям
+INSERT INTO route_stations (route_id, station_id, stop_order, arrival_time, departure_time) VALUES
+-- Маршрут СПб — Токсово
+(1, 1, 1, '06:00', '06:05'),
+(1, 2, 2, '06:30', '06:32'),
+(1, 3, 3, '07:00', NULL),
+
+-- Маршрут СПб — Павловск
+(2, 4, 1, '08:00', '08:05'),
+(2, 5, 2, '08:25', '08:30'),
+(2, 6, 3, '09:00', NULL),
+
+-- Маршрут СПб — Луга
+(3, 7, 1, '10:00', '10:05'),
+(3, 8, 2, '11:00', '11:10'),
+(3, 9, 3, '12:00', NULL);
+
+-- Привязка расписания к неделе
+INSERT INTO schedules (route_id, week_type_id) VALUES
+(1, 1), (1, 2),  -- Маршрут 1 работает все дни
+(2, 1),          -- Маршрут 2 только рабочие
+(3, 2);          -- Маршрут 3 только выходные
